@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+    environment{
+        BUCKET_NAME='testing-bucket-danielbrown'
+    }
+
+    stages {
+        stage('Backup to S3') {
+            steps {
+                withAWS(credentials: 'aws_credentials', region: 'us-east-1'){
+                    sh '''
+                    set +e
+                    tar -cvf jenkins_backup.tar -C $JENKINS_HOME .
+                    set -e
+                    ls jenkins_backup.tar
+                    exitcode=$?
+                    if [ "$exitcode" != 0]; then
+                    exit
+                    fi
+                    
+                    aws s3 cp jenkins_backup.tar s3://$BUCKET_NAME
+                    
+                    rm -rf *
+                    '''
+                }
+            }
+        }
+    }
+}
+
